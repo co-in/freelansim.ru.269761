@@ -12,7 +12,7 @@ https://freelansim.ru/tasks/269761
             //Есть возможность расширить вывод ошибок допустим в базу или на почту
             'class' => 'aki\telegram\FileOutput',
              //Ошибки логируются в файл
-            'fileName' => __DIR__ . '/../tg.log',
+            'fileName' => __DIR__ . '/../telegram.log',
         ],
     ],
 ]
@@ -26,7 +26,7 @@ Yii::$app->telegram->getMe();
 
 Отравка сообщения
 ```php
-Yii::$app->tg->sendMessage([
+Yii::$app->telegram->sendMessage([
 	'chat_id' => 123456789,
 	'text' => 'Тестовое сообщение',
 ]);
@@ -34,7 +34,7 @@ Yii::$app->tg->sendMessage([
 
 Пример загрузки нового файла. Проверяется по file_exists
 ```php
-Yii::$app->tg->sendAudio([
+Yii::$app->telegram->sendAudio([
 	'chat_id' => 123456789,
 	'audio' => '/home/coin/Downloads/test.mp3', //путь к файлу
 	'caption' => 'Создание Файла',
@@ -44,7 +44,7 @@ Yii::$app->tg->sendAudio([
 
 Пример загрузки существующего файла. Проверяется по file_exists
 ```php
-Yii::$app->tg->sendAudio([
+Yii::$app->telegram->sendAudio([
 	'chat_id' => 123456789,
 	'audio' => 'CQADAgADxgQAAluH0Ui880sYZ9eVgBYE', //file_id
 	'caption' => 'Создание Файла',
@@ -55,7 +55,7 @@ Yii::$app->tg->sendAudio([
 Пример загрузки медиа группы
 
 ```php
-Yii::$app->tg->sendMediaGroup([
+Yii::$app->telegram->sendMediaGroup([
     'chat_id' => 123456789,
     'media' => [
         [
