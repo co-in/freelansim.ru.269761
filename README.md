@@ -73,3 +73,16 @@ Yii::$app->tg->sendMediaGroup([
     ],
 ]);
 ```
+
+Настройка **composer.json** для установки в обход packagist.org
+```php
+  "require": {
+	"co-in/freelansim.ru.269761": "dev-master"
+  },
+  "repositories": [
+	{
+	  "type": "github",
+	  "url": "https://github.com/co-in/freelansim.ru.269761"
+	}
+  ]
+```
