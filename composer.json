@@ -1,0 +1,11 @@
+{
+  "name": "co-in/freelansim.ru.269761",
+  "require": {
+	"ext-curl": "*"
+  },
+  "autoload": {
+	"psr-4": {
+	  "aki\\telegram\\": ""
+	}
+  }
+}
