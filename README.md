@@ -56,7 +56,7 @@ Yii::$app->tg->sendAudio([
 
 ```php
 Yii::$app->tg->sendMediaGroup([
-    'chat_id' => 212856439,
+    'chat_id' => 123456789,
     'media' => [
         [
             'type' => 'photo',
