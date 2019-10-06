@@ -1,7 +1,8 @@
 {
   "name": "co-in/freelansim.ru.269761",
   "require": {
-	"ext-curl": "*"
+	"ext-curl": "*",
+	"ext-json": "*"
   },
   "autoload": {
 	"psr-4": {

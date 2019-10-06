@@ -63,6 +63,8 @@ class TelegramBot extends Component {
 
 	const ATTACHMENT_VIDEO = 'video';
 
+	const ATTACHMENT_MEDIA = 'media';
+
 	public $botToken;
 
 	public $botUsername;
@@ -74,6 +76,12 @@ class TelegramBot extends Component {
 
 	/**@var string[] $attachments */
 	protected $attachments;
+
+	/**@var string[] $attachmentsGroup */
+	protected static $attachmentsGroup = [
+		self::ATTACHMENT_PHOTO,
+		self::ATTACHMENT_VIDEO,
+	];
 
 	/**@var string[] $attachments */
 	protected $methods;
@@ -122,6 +130,76 @@ class TelegramBot extends Component {
 		return $this->request($name, $params[0]);
 	}
 
+	protected function convertFile($attach) {
+		if (is_array($attach) && array_key_exists('file_id', $attach)) {
+			//Если передали file_id в массиве
+			$attach = (string)$attach['file_id'];
+		} elseif (file_exists($attach)) {
+			//Если передали имя файла
+			$attach = realpath($attach);
+
+			if (!$attach) {
+				$this->output->error("File RealPath failed");
+			}
+
+			//Создаем СurlFile из файла
+			$attach = new CURLFile($attach);
+			$attach->postname = uniqid("file_");
+		} else {
+			//Передали file_id
+			$attach = (string)$attach;
+		}
+
+		return $attach;
+	}
+
+	protected function attachMedia(array &$params, array &$media): bool {
+		$file = $this->convertFile($media['media']);
+
+		if ($file instanceof CURLFile) {
+			$params[$file->postname] = $file;
+			$media['media'] = "attach://{$file->postname}";
+		} else {
+			$media['media'] = $file;
+		}
+
+		return true;
+	}
+
+	protected function attachFile(array &$params, string $attachment): bool {
+		if (isset($params[$attachment])) {
+			$params[$attachment] = $this->convertFile($params[$attachment]);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	protected function replacePostFieldsArray($params): array {
+		foreach (array_keys($params) as $key) {
+			if (is_array($params[$key])) {
+				$params[$key] = json_encode($params[$key]);
+			}
+		}
+
+		return $params;
+	}
+
+	protected function buildPostFields($data, $existingKeys = '', &$returnArray = []) {
+		if (($data instanceof CURLFile) or !(is_array($data) or is_object($data))) {
+			$returnArray[$existingKeys] = $data;
+
+			return $returnArray;
+		} else {
+			foreach ($data as $key => $item) {
+				self::buildPostFields($item, $existingKeys ? $existingKeys . "[$key]" : $key, $returnArray);
+			}
+
+			return $returnArray;
+		}
+	}
+
 	protected function request($method, array $params) {
 		$ch = curl_init("https://api.telegram.org/bot{$this->botToken}/{$method}");
 
@@ -144,40 +222,35 @@ class TelegramBot extends Component {
 		$isRawFields = false;
 
 		foreach (array_keys($this->attachments) as $attachment) {
-			if (isset($params[$attachment])) {
-				$attach = $params[$attachment];
-
-				if (is_array($attach) && array_key_exists('file_id', $attach)) {
-					//Если передали file_id в массиве
-					$attach = (string)$attach['file_id'];
-				} elseif (file_exists($attach)) {
-					//Если передали имя файла
-					$attach = realpath($attach);
-
-					if (!$attach) {
-						$this->output->error("File RealPath failed");
-					}
-
-					//Проверяем доступность класса CURLFile
-					if (class_exists('CURLFile')) {
-						$attach = new CURLFile($attach);
-					} else {
-						$attach = "@{$attach}";
-					}
-				} else {
-					//Передали file_id
-					$attach = (string)$attach;
+			if ($attachment === self::ATTACHMENT_MEDIA) {
+				if (!array_key_exists($attachment, $params)) {
+					continue;
 				}
 
-				$params[$attachment] = $attach;
-				$isRawFields = true;
+				$groupCount = count($params[$attachment]);
 
-				break;
+				if ($groupCount < 2 || $groupCount > 10) {
+					$this->output->error('Group attachment allowed 2-10 items');
+				}
+
+				foreach (array_keys($params[$attachment]) as $index) {
+					if (!array_key_exists('type', $params[$attachment][$index]) || !in_array($params[$attachment][$index]['type'], self::$attachmentsGroup)) {
+						$this->output->error("Group must contains type 'photo' or 'video'");
+					}
+
+					$isRawFields |= $this->attachMedia($params, $params[$attachment][$index]);
+				}
+			} else {
+				$isRawFields |= $this->attachFile($params, $attachment);
 			}
 		}
 
 		if ($isRawFields) {
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, [
+				'multipart/form-data',
+			]);
+
+			curl_setopt($ch, CURLOPT_POSTFIELDS, self::replacePostFieldsArray($params));
 		} else {
 			curl_setopt($ch, CURLOPT_HTTPHEADER, [
 				'Content-Type: application/json',
