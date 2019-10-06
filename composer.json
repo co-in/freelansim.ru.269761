@@ -1,6 +1,5 @@
 {
   "name": "co-in/freelansim.ru.269761",
-  "minimum-stability": "stable",
   "require": {
 	"ext-curl": "*"
   },
