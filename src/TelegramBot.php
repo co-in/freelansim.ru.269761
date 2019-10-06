@@ -5,9 +5,51 @@ namespace aki\telegram;
 use CURLFile;
 use ReflectionClass;
 use yii\base\Component;
+use Yii;
 
 /**
- * @method getMe(): string without json_decode
+ * @method object getMe()
+ * @method object sendMessage(array $params)
+ * @method object forwardMessage(array $params)
+ * @method object sendPhoto(array $params)
+ * @method object sendAudio(array $params)
+ * @method object sendDocument(array $params)
+ * @method object sendSticker(array $params)
+ * @method object sendVideo(array $params)
+ * @method object sendLocation(array $params)
+ * @method object sendChatAction(array $params)
+ * @method object getUserProfilePhotos(array $params)
+ * @method object getUpdates(array $params)
+ * @method object setWebhook(array $params)
+ * @method object getChat(array $params)
+ * @method object getChatAdministrators(array $params)
+ * @method object getChatMembersCount(array $params)
+ * @method object getChatMember(array $params)
+ * @method object answerCallbackQuery(array $params)
+ * @method object editMessageText(array $params)
+ * @method object editMessageCaption(array $params)
+ * @method object sendGame(array $params)
+ * @method object getGameHighScores(array $params)
+ * @method object answerInlineQuery(array $params)
+ * @method object kickChatMember(array $params)
+ * @method object restrictChatMember(array $params)
+ * @method object promoteChatMember(array $params)
+ * @method object exportChatInviteLink(array $params)
+ * @method object deleteChatPhoto(array $params)
+ * @method object setChatTitle(array $params)
+ * @method object setChatDescription(array $params)
+ * @method object unpinChatMessage(array $params)
+ * @method object pinChatMessage(array $params)
+ * @method object leaveChat(array $params)
+ * @method object setChatStickerSet(array $params)
+ * @method object deleteChatStickerSet(array $params)
+ * @method object getFile(array $params)
+ * @method object sendMediaGroup(array $params)
+ *
+ * @method object Game(array $params)
+ * @method object Animation(array $params)
+ * @method object CallbackGame(array $params)
+ * @method object GameHighScore(array $params)
  */
 class TelegramBot extends Component {
 
@@ -62,175 +104,28 @@ class TelegramBot extends Component {
 
 	public function init() {
 		parent::init();
-
-		//TODO Сделать разные выводы и имя файла
-		$this->output = new FileOutput();
-
+		$this->output = Yii::createObject($this->output);
 		$this->attachments = self::getConstantGroup("ATTACHMENT_", false);
 	}
 
-	public function sendMessage(array $params) {
+	public function hook() {
+		$json = file_get_contents('php://input');
 
-	}
-
-	public function forwardMessage(array $params) {
-
-	}
-
-	public function sendPhoto(array $option) {
-
-	}
-
-	public function sendAudio(array $option) {
-
-	}
-
-	public function sendDocument(array $option) {
-
-	}
-
-	public function sendSticker(array $option) {
-
-	}
-
-	public function sendVideo(array $option) {
-
-	}
-
-	public function sendLocation(array $option) {
-
-	}
-
-	public function sendChatAction(array $option) {
-
-	}
-
-	public function getUserProfilePhotos($option) {
-
-	}
-
-	public function getUpdates(array $option = []) {
-
-	}
-
-	public function setWebhook(array $option = []) {
-
-	}
-
-	public function getChat(array $option = []) {
-
-	}
-
-	public function getChatAdministrators(array $option = []) {
-
-	}
-
-	public function getChatMembersCount(array $option = []) {
-
-	}
-
-	public function getChatMember(array $option = []) {
-
-	}
-
-	public function answerCallbackQuery(array $option = []) {
-
-	}
-
-	public function editMessageText(array $option = []) {
-
-	}
-
-	public function editMessageCaption(array $option = []) {
-
-	}
-
-	public function sendGame(array $option = []) {
-
-	}
-
-	public function Game(array $option = []) {
-
-	}
-
-	public function Animation(array $option = []) {
-
-	}
-
-	public function CallbackGame(array $option = []) {
-
-	}
-
-	public function getGameHighScores(array $option = []) {
-
-	}
-
-	public function GameHighScore(array $option = []) {
-
-	}
-
-	public function answerInlineQuery(array $option = []) {
-
-	}
-
-	public function kickChatMember(array $option = []) {
-
-	}
-
-	public function restrictChatMember(array $option = []) {
-
-	}
-
-	public function promoteChatMember(array $option = []) {
-
-	}
-
-	public function exportChatInviteLink(array $option = []) {
-
-	}
-
-	public function deleteChatPhoto(array $option = []) {
-
-	}
-
-	public function setChatTitle(array $option = []) {
-
-	}
-
-	public function setChatDescription(array $option = []) {
-
-	}
-
-	public function unpinChatMessage(array $option = []) {
-
-	}
-
-	public function pinChatMessage(array $option = []) {
-
-	}
-
-	public function leaveChat(array $option = []) {
-
-	}
-
-	public function setChatStickerSet(array $option = []) {
-
-	}
-
-	public function deleteChatStickerSet(array $option = []) {
-
+		return json_decode($json);
 	}
 
 	public function __call($name, $params) {
-		return $this->request($name, [
-			'params' => $params,
-		]);
+		if (empty($params)) {
+			return $this->request($name, $params);
+		}
+
+		return $this->request($name, $params[0]);
 	}
 
-	protected function request($method, array $params): string {
+	protected function request($method, array $params) {
 		$ch = curl_init("https://api.telegram.org/bot{$this->botToken}/{$method}");
 
-		if ($ch) {
+		if (!$ch) {
 			$this->output->error('curl init');
 		}
 
@@ -246,7 +141,9 @@ class TelegramBot extends Component {
 			curl_setopt($ch, CURLOPT_PROXY, "socks5://{$this->proxy}");
 		}
 
-		foreach ($this->attachments as $attachment) {
+		$isRawFields = false;
+
+		foreach (array_keys($this->attachments) as $attachment) {
 			if (isset($params[$attachment])) {
 				$attach = $params[$attachment];
 
@@ -273,12 +170,20 @@ class TelegramBot extends Component {
 				}
 
 				$params[$attachment] = $attach;
+				$isRawFields = true;
 
 				break;
 			}
 		}
 
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+		if ($isRawFields) {
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+		} else {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, [
+				'Content-Type: application/json',
+			]);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+		}
 
 		$response = curl_exec($ch);
 
@@ -288,6 +193,6 @@ class TelegramBot extends Component {
 
 		curl_close($ch);
 
-		return $response;
+		return json_decode($response);
 	}
 }
