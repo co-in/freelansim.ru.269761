@@ -222,7 +222,9 @@ class TelegramBot extends Component {
 	}
 
 	public function __call($name, $params) {
-		return $this->request($name, ...$params);
+		return $this->request($name, [
+			'params' => $params,
+		]);
 	}
 
 	protected function request($method, array $params): string {
